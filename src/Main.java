@@ -1,3 +1,5 @@
+import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.util.*;
 
@@ -11,6 +13,8 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+        initGUI();
 
         System.out.println("Ohayo gozaimasu");
 
@@ -34,6 +38,33 @@ public class Main {
             }
             System.out.println();
         }
+    }
+
+    public static void initGUI() {
+        JFrame welcomeFrame = new JFrame();
+        welcomeFrame.setTitle("Sam & Edi Maze Assignment 2025");
+        welcomeFrame.setSize(800,500);
+        welcomeFrame.setLayout(new BoxLayout(welcomeFrame.getContentPane(),BoxLayout.Y_AXIS));
+
+        JLabel preTitle = new JLabel();
+        preTitle.setText("Welcome to the Sam & Edi");
+        preTitle.setFont(new Font("Roboto", Font.PLAIN, 24));
+        preTitle.setHorizontalAlignment(JLabel.CENTER);
+        preTitle.setVerticalAlignment(JLabel.CENTER);
+        JLabel title = new JLabel();
+        title.setText("Maze Assignment 2025");
+        title.setFont(new Font("Roboto", Font.BOLD, 28));
+        title.setHorizontalAlignment(JLabel.CENTER);
+        title.setVerticalAlignment(JLabel.CENTER);
+
+        JPanel titlePanel = new JPanel();
+        titlePanel.setBackground(Color.GREEN);
+        titlePanel.add(preTitle);
+
+        welcomeFrame.add(preTitle);
+        welcomeFrame.add(title);
+        welcomeFrame.setVisible(true);
+
     }
 
     public static void generateMap(int rows, int cols) {
