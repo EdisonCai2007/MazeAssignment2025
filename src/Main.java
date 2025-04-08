@@ -18,29 +18,21 @@ public class Main {
      */
 
     static boolean canExit = false;
-    static ArrayList<Integer> pathX = new ArrayList<Integer>();
-    static ArrayList<Integer> pathY = new ArrayList<Integer>();
+    static ArrayList<Integer> pathX = new ArrayList<>();
+    static ArrayList<Integer> pathY = new ArrayList<>();
 
     static int startX, startY;
+    static int rows, cols;
 
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
         startMenuGUI();
 
-        System.out.println("Ohayo gozaimasu");
-
-        System.out.println("Please enter size of grid:");
-        System.out.println("Please Enter Rows:");
-        int rows = Integer.parseInt(br.readLine());
-
-        System.out.println("Please Enter Columns:");
-        int cols = Integer.parseInt(br.readLine());
-
         visited = new boolean[rows][cols];
         map = new char[rows][cols];
 
-        generateMap(rows, cols);
+        generateMap();
 
         // DEBUGGING DISPLAY
 
@@ -53,14 +45,14 @@ public class Main {
         dfs(startX, startY);
 
         for (int i = 0; i < pathX.size(); i++) {
-            System.out.println(pathY.get(i) + " " + pathX.get(i));
+            System.out.println(pathX.get(i) + " " + pathY.get(i));
         }
     }
 
     public static void startMenuGUI() {
         JFrame welcomeFrame = new JFrame();
         welcomeFrame.setTitle("Sam & Edi Maze Assignment 2025");
-        welcomeFrame.setSize(800,500);
+        welcomeFrame.setSize(1920,1080);
         welcomeFrame.setLayout(new GridBagLayout());
         welcomeFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -68,7 +60,7 @@ public class Main {
 
         JLabel preTitle = new JLabel();
         preTitle.setText("Welcome to the Sam & Edi");
-        preTitle.setFont(new Font("Roboto", Font.PLAIN, 24));
+        preTitle.setFont(new Font("Roboto", Font.PLAIN, 48));
         preTitle.setHorizontalAlignment(JLabel.CENTER);
         preTitle.setVerticalAlignment(JLabel.CENTER);
         gbc.gridy = 0;
@@ -77,7 +69,7 @@ public class Main {
 
         JLabel title = new JLabel();
         title.setText("Maze Assignment 2025");
-        title.setFont(new Font("Roboto", Font.BOLD, 28));
+        title.setFont(new Font("Roboto", Font.BOLD, 60));
         title.setHorizontalAlignment(JLabel.CENTER);
         title.setVerticalAlignment(JLabel.CENTER);
         gbc.gridy = 1;
@@ -86,12 +78,13 @@ public class Main {
 
         JButton mazeButton = new JButton();
         mazeButton.setText("Generate Random Maze");
-        mazeButton.setFont(new Font("Roboto", Font.BOLD, 14));
+        mazeButton.setFont(new Font("Roboto", Font.PLAIN, 32));
+        mazeButton.setMargin(new Insets(10,10,10,10));
         mazeButton.setHorizontalAlignment(JLabel.CENTER);
         mazeButton.setVerticalAlignment(JLabel.CENTER);
         gbc.gridy = 2;
         gbc.gridwidth = 1;
-        gbc.insets = new Insets(30,0,0,0);
+        gbc.insets = new Insets(60,0,0,0);
 
         mazeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -103,12 +96,13 @@ public class Main {
 
         JButton randMazeButton = new JButton();
         randMazeButton.setText("Generate Maze (Purely Random)");
-        randMazeButton.setFont(new Font("Roboto", Font.BOLD, 14));
+        randMazeButton.setFont(new Font("Roboto", Font.PLAIN, 32));
+        randMazeButton.setMargin(new Insets(10,10,10,10));
         randMazeButton.setHorizontalAlignment(JLabel.CENTER);
         randMazeButton.setVerticalAlignment(JLabel.CENTER);
         gbc.gridy = 3;
         gbc.gridwidth = 1;
-        gbc.insets = new Insets(20,0,0,0);
+        gbc.insets = new Insets(60,0,0,0);
 
         randMazeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -120,12 +114,13 @@ public class Main {
 
         JButton readFileButton = new JButton();
         readFileButton.setText("Generate Maze (File)");
-        readFileButton.setFont(new Font("Roboto", Font.BOLD, 14));
+        readFileButton.setFont(new Font("Roboto", Font.PLAIN, 32));
+        readFileButton.setMargin(new Insets(10,10,10,10));
         readFileButton.setHorizontalAlignment(JLabel.CENTER);
         readFileButton.setVerticalAlignment(JLabel.CENTER);
         gbc.gridy = 4;
         gbc.gridwidth = 1;
-        gbc.insets = new Insets(20,0,0,0);
+        gbc.insets = new Insets(60,0,0,0);
         welcomeFrame.add(readFileButton, gbc);
 
         JPanel titlePanel = new JPanel();
@@ -137,53 +132,95 @@ public class Main {
     public static void mazeSettingGUI(String currentSetting) {
         JFrame settingsFrame = new JFrame();
         settingsFrame.setTitle("Maze Settings");
-        settingsFrame.setSize(300,200);
+        settingsFrame.setSize(800,600);
         settingsFrame.setLayout(new GridBagLayout());
 
         GridBagConstraints gbc = new GridBagConstraints();
 
+        JLabel title = new JLabel();
+        title.setText(currentSetting);
+        title.setFont(new Font("Roboto", Font.BOLD, 48));
+        title.setHorizontalAlignment(JLabel.CENTER);
+        title.setVerticalAlignment(JLabel.CENTER);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 4;
+        gbc.insets = new Insets(0,0,30,0);
+        settingsFrame.add(title, gbc);
+
+        JPanel sizeEditor = new JPanel();
+        sizeEditor.setLayout(new FlowLayout());
+
         JLabel rowsText = new JLabel();
         rowsText.setText("Rows:");
-        rowsText.setFont(new Font("Roboto", Font.BOLD, 14));
+        rowsText.setFont(new Font("Roboto", Font.BOLD, 28));
         rowsText.setHorizontalAlignment(JLabel.CENTER);
         rowsText.setVerticalAlignment(JLabel.CENTER);
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(0,0,0,0);
-        settingsFrame.add(rowsText, gbc);
+//        gbc.gridx = 0;
+//        gbc.gridy = 1;
+//        gbc.gridwidth = 1;
+//        gbc.insets = new Insets(0,0,0,0);
+        sizeEditor.add(rowsText, gbc);
 
         SpinnerModel rowModel = new SpinnerNumberModel(5, 3, 20, 1);
         JSpinner rowSpinner = new JSpinner(rowModel);
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(0,0,0,0);
-        settingsFrame.add(rowSpinner, gbc);
+        rowSpinner.setFont(new Font("Roboto", Font.PLAIN, 28));
+//        gbc.gridx = 1;
+//        gbc.gridy = 1;
+//        gbc.gridwidth = 1;
+//        gbc.insets = new Insets(0,0,0,0);
+        sizeEditor.add(rowSpinner, gbc);
 
         JLabel colsText = new JLabel();
-        colsText.setText("Columns:");
-        colsText.setFont(new Font("Roboto", Font.BOLD, 14));
+        colsText.setText("     Columns:");
+        colsText.setFont(new Font("Roboto", Font.BOLD, 28));
         colsText.setHorizontalAlignment(JLabel.CENTER);
         colsText.setVerticalAlignment(JLabel.CENTER);
-        gbc.gridx = 2;
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(0,20,0,0);
-        settingsFrame.add(colsText, gbc);
+//        gbc.gridx = 2;
+//        gbc.gridy = 1;
+//        gbc.gridwidth = 1;
+//        gbc.insets = new Insets(0,20,0,0);
+        sizeEditor.add(colsText, gbc);
 
         SpinnerModel colModel = new SpinnerNumberModel(5, 3, 20, 1);
         JSpinner colSpinner = new JSpinner(colModel);
-        gbc.gridx = 3;
+        colSpinner.setFont(new Font("Roboto", Font.PLAIN, 28));
+//        gbc.gridx = 3;
+//        gbc.gridy = 1;
+//        gbc.gridwidth = 1;
+//        gbc.insets = new Insets(0,0,0,0);
+        sizeEditor.add(colSpinner, gbc);
+
+        gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.gridwidth = 1;
+        gbc.gridwidth = 4;
         gbc.insets = new Insets(0,0,0,0);
-        settingsFrame.add(colSpinner, gbc);
+        settingsFrame.add(sizeEditor, gbc);
+
+        JButton generateMazeButton = new JButton();
+        generateMazeButton.setText("Generate Maze");
+        generateMazeButton.setFont(new Font("Roboto", Font.PLAIN, 32));
+        generateMazeButton.setMargin(new Insets(10,10,10,10));
+        generateMazeButton.setHorizontalAlignment(JLabel.CENTER);
+        generateMazeButton.setVerticalAlignment(JLabel.CENTER);
+
+        generateMazeButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                rows = (Integer) rowSpinner.getValue();
+                cols = (Integer) colSpinner.getValue();
+            }
+        } );
+
+        gbc.gridx = 3;
+        gbc.gridy = 2;
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(100,0,0,0);
+        settingsFrame.add(generateMazeButton, gbc);
 
         settingsFrame.setVisible(true);
     }
 
-    public static void generateMap(int rows, int cols) {
+    public static void generateMap() {
         ArrayList<Integer> openX = new ArrayList<>();
         ArrayList<Integer> openY = new ArrayList<>();
 
@@ -347,7 +384,7 @@ public class Main {
         }
         if (!canExit) {
             pathX.remove(pathX.size() - 1);
-            pathY.remove(pathX.size() - 1);
+            pathY.remove(pathY.size() - 1);
         }
     }
 }
