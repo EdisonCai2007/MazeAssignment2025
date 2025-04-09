@@ -4,13 +4,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
     static boolean[][] visited;
 
     static char[][] map;
 
-    static char[] mapLegend = {'B', 'O', 'X', 'S'};
+    static JFrame mazeFrame = new JFrame();
+
+    static char[] mapLegend = {'B', 'O', 'S', 'X', '+'};
+    static HashMap<Character, Color> colourLegend = new HashMap<>();
 
 
     /*
@@ -27,12 +31,12 @@ public class Main {
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-        startMenuGUI();
-
-        visited = new boolean[rows][cols];
-        map = new char[rows][cols];
-
-        generateMap();
+        colourLegend.put('B',new Color(157, 119, 95));
+        colourLegend.put('O',new Color(246, 228, 145));
+        colourLegend.put('S',new Color(176, 176, 176));
+        colourLegend.put('X',new Color(190, 248, 171));
+        colourLegend.put('+',new Color(104, 223, 248));
+        buildStartMenuGUI();
 
         // DEBUGGING DISPLAY
 
@@ -42,17 +46,17 @@ public class Main {
             }
             System.out.println();
         }
-        dfs(startX, startY);
+        // dfs(startX, startY);
 
         for (int i = 0; i < pathX.size(); i++) {
             System.out.println(pathX.get(i) + " " + pathY.get(i));
         }
     }
 
-    public static void startMenuGUI() {
+    public static void buildStartMenuGUI() {
         JFrame welcomeFrame = new JFrame();
         welcomeFrame.setTitle("Sam & Edi Maze Assignment 2025");
-        welcomeFrame.setSize(1920,1080);
+        welcomeFrame.setSize(1920, 1080);
         welcomeFrame.setLayout(new GridBagLayout());
         welcomeFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -88,7 +92,7 @@ public class Main {
 
         mazeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                mazeSettingGUI("Generate Random Maze");
+                buildMazeSettingGUI("Generate Random Maze", welcomeFrame);
             }
         } );
 
@@ -106,7 +110,7 @@ public class Main {
 
         randMazeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                mazeSettingGUI("Generate Maze (Purely Random)");
+                buildMazeSettingGUI("Generate Maze (Purely Random)", welcomeFrame);
             }
         } );
 
@@ -129,7 +133,7 @@ public class Main {
         welcomeFrame.setVisible(true);
     }
 
-    public static void mazeSettingGUI(String currentSetting) {
+    public static void buildMazeSettingGUI(String currentSetting, JFrame welcomeFrame) {
         JFrame settingsFrame = new JFrame();
         settingsFrame.setTitle("Maze Settings");
         settingsFrame.setSize(800,600);
@@ -162,7 +166,7 @@ public class Main {
 //        gbc.insets = new Insets(0,0,0,0);
         sizeEditor.add(rowsText, gbc);
 
-        SpinnerModel rowModel = new SpinnerNumberModel(5, 3, 20, 1);
+        SpinnerModel rowModel = new SpinnerNumberModel(20, 3, 50, 1);
         JSpinner rowSpinner = new JSpinner(rowModel);
         rowSpinner.setFont(new Font("Roboto", Font.PLAIN, 28));
 //        gbc.gridx = 1;
@@ -182,7 +186,7 @@ public class Main {
 //        gbc.insets = new Insets(0,20,0,0);
         sizeEditor.add(colsText, gbc);
 
-        SpinnerModel colModel = new SpinnerNumberModel(5, 3, 20, 1);
+        SpinnerModel colModel = new SpinnerNumberModel(20, 3, 50, 1);
         JSpinner colSpinner = new JSpinner(colModel);
         colSpinner.setFont(new Font("Roboto", Font.PLAIN, 28));
 //        gbc.gridx = 3;
@@ -208,6 +212,16 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 rows = (Integer) rowSpinner.getValue();
                 cols = (Integer) colSpinner.getValue();
+                settingsFrame.setVisible(false);
+                welcomeFrame.setVisible(false);
+                generateMap();
+                buildMazeGUI();
+
+                dfs(startX,startY);
+                for (int i = 0; i < pathX.size(); i++) {
+                    System.out.println(pathX.get(i) + " " + pathY.get(i));
+                }
+                buildMazeGUI();
             }
         } );
 
@@ -220,18 +234,58 @@ public class Main {
         settingsFrame.setVisible(true);
     }
 
+    public static void buildMazeGUI() {
+        mazeFrame.setVisible(true);
+        mazeFrame.getContentPane().removeAll();
+        mazeFrame.setTitle("Maze");
+        mazeFrame.setSize(1920, 1080);
+        mazeFrame.setLayout(new GridLayout(rows, cols));
+
+        ArrayList<String> pathXY = new ArrayList<>();
+        for (int i = 1; i < pathX.size(); i++) {
+            pathXY.add(pathX.get(i) + " " + pathY.get(i));
+        }
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                JPanel positionPanel = new JPanel(new GridBagLayout());
+                positionPanel.setBorder(BorderFactory.createLineBorder(Color.black));
+                if (pathXY.contains(j + " " + i)) {
+                    positionPanel.setBackground(colourLegend.get('+'));
+                } else {
+                    positionPanel.setBackground(colourLegend.get(map[i][j]));
+                }
+
+                JLabel positionLabel = new JLabel();
+                if (pathXY.contains(j + " " + i)) {
+                    positionLabel.setText("+");
+                } else {
+                    positionLabel.setText("" + map[i][j]);
+                }
+                positionLabel.setFont(new Font("Roboto", Font.BOLD, 32));
+                positionLabel.setHorizontalAlignment(JLabel.CENTER);
+                positionLabel.setVerticalAlignment(JLabel.CENTER);
+                positionPanel.add(positionLabel);
+                mazeFrame.add(positionPanel);
+            }
+        }
+    }
+
     public static void generateMap() {
+        visited = new boolean[rows][cols];
+        map = new char[rows][cols];
+
         ArrayList<Integer> openX = new ArrayList<>();
         ArrayList<Integer> openY = new ArrayList<>();
 
-        for (int i = 0; i < map.length; i++) {
-            for (int j = 0; j < map[0].length; j++) {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
                 map[i][j] = 'B';
             }
         }
 
-        openX.add((int) (Math.random() * (cols - 2)) + 1); // Generate Start X Position
-        openY.add((int) (Math.random() * (rows - 2)) + 1); // Generate Start Y Position
+        openX.add((int) (Math.random() * (cols / 3)) + (cols / 3)); // Generate Start X Position
+        openY.add((int) (Math.random() * (rows / 3)) + (rows / 3)); // Generate Start Y Position
         map[openY.get(0)][openX.get(0)] = 'S';
 
         startX = openX.get(0);
@@ -257,6 +311,7 @@ public class Main {
                             openY.add(posY - 1);
                             openX.add(posX);
                             map[posY - 1][posX] = 'O';
+
                             builtNewPoint = true;
                         } else {
                             openDirections.remove("up");
@@ -306,6 +361,14 @@ public class Main {
                 openX.remove(randomIdx);
             }
         }
+
+        // TODO Debug Output (Remove Later)
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                System.out.print(map[i][j] + " ");
+            }
+            System.out.println();
+        }
     }
 
     /** This method checks whether the new randomly chosen point is viable to be set as an open path. There are three
@@ -327,7 +390,7 @@ public class Main {
         int countAdjacent = 0;
 
         // Check if new position in on the edge of the map
-        if (posY == 0 || posY == map.length - 1 || posX == 0 || posX == map[0].length - 1) {
+        if (posY == 0 || posY == rows - 1 || posX == 0 || posX == cols - 1) {
             if (hasExit) { // If an exit has already been found, this new point is not viable
                 return false;
             } else { // If an exit has not been found, this point will now be our exit point
