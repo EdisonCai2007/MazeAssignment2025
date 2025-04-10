@@ -2,16 +2,15 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class Main {
     static boolean[][] visited;
 
     static char[][] map;
-
-    static JFrame mazeFrame = new JFrame();
 
     static char[] mapLegend = {'B', 'O', 'S', 'X', '+'};
     static HashMap<Character, Color> colourLegend = new HashMap<>();
@@ -29,28 +28,12 @@ public class Main {
     static int rows, cols;
 
     public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-
         colourLegend.put('B',new Color(157, 119, 95));
         colourLegend.put('O',new Color(246, 228, 145));
         colourLegend.put('S',new Color(176, 176, 176));
         colourLegend.put('X',new Color(190, 248, 171));
         colourLegend.put('+',new Color(104, 223, 248));
         buildStartMenuGUI();
-
-        // DEBUGGING DISPLAY
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                System.out.print(map[i][j] + " ");
-            }
-            System.out.println();
-        }
-        // dfs(startX, startY);
-
-        for (int i = 0; i < pathX.size(); i++) {
-            System.out.println(pathX.get(i) + " " + pathY.get(i));
-        }
     }
 
     public static void buildStartMenuGUI() {
@@ -125,10 +108,33 @@ public class Main {
         gbc.gridy = 4;
         gbc.gridwidth = 1;
         gbc.insets = new Insets(60,0,0,0);
+
+        // TODO read file, need to change button
+        readFileButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                readFileGUI();
+            }
+        } );
+
         welcomeFrame.add(readFileButton, gbc);
 
-        JPanel titlePanel = new JPanel();
-        titlePanel.setBackground(Color.GREEN);
+        JButton exitButton = new JButton();
+        exitButton.setText("Exit Program");
+        exitButton.setFont(new Font("Roboto", Font.PLAIN, 32));
+        exitButton.setMargin(new Insets(10,10,10,10));
+        exitButton.setHorizontalAlignment(JLabel.CENTER);
+        exitButton.setVerticalAlignment(JLabel.CENTER);
+        gbc.gridy = 5;
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(60,0,0,0);
+
+        exitButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
+            }
+        } );
+
+        welcomeFrame.add(exitButton, gbc);
 
         welcomeFrame.setVisible(true);
     }
@@ -160,19 +166,11 @@ public class Main {
         rowsText.setFont(new Font("Roboto", Font.BOLD, 28));
         rowsText.setHorizontalAlignment(JLabel.CENTER);
         rowsText.setVerticalAlignment(JLabel.CENTER);
-//        gbc.gridx = 0;
-//        gbc.gridy = 1;
-//        gbc.gridwidth = 1;
-//        gbc.insets = new Insets(0,0,0,0);
         sizeEditor.add(rowsText, gbc);
 
         SpinnerModel rowModel = new SpinnerNumberModel(20, 3, 50, 1);
         JSpinner rowSpinner = new JSpinner(rowModel);
         rowSpinner.setFont(new Font("Roboto", Font.PLAIN, 28));
-//        gbc.gridx = 1;
-//        gbc.gridy = 1;
-//        gbc.gridwidth = 1;
-//        gbc.insets = new Insets(0,0,0,0);
         sizeEditor.add(rowSpinner, gbc);
 
         JLabel colsText = new JLabel();
@@ -180,19 +178,11 @@ public class Main {
         colsText.setFont(new Font("Roboto", Font.BOLD, 28));
         colsText.setHorizontalAlignment(JLabel.CENTER);
         colsText.setVerticalAlignment(JLabel.CENTER);
-//        gbc.gridx = 2;
-//        gbc.gridy = 1;
-//        gbc.gridwidth = 1;
-//        gbc.insets = new Insets(0,20,0,0);
         sizeEditor.add(colsText, gbc);
 
         SpinnerModel colModel = new SpinnerNumberModel(20, 3, 50, 1);
         JSpinner colSpinner = new JSpinner(colModel);
         colSpinner.setFont(new Font("Roboto", Font.PLAIN, 28));
-//        gbc.gridx = 3;
-//        gbc.gridy = 1;
-//        gbc.gridwidth = 1;
-//        gbc.insets = new Insets(0,0,0,0);
         sizeEditor.add(colSpinner, gbc);
 
         gbc.gridx = 0;
@@ -214,12 +204,11 @@ public class Main {
                 cols = (Integer) colSpinner.getValue();
                 settingsFrame.setVisible(false);
                 welcomeFrame.setVisible(false);
-                generateMap();
-                buildMazeGUI();
-
-                dfs(startX,startY);
-                for (int i = 0; i < pathX.size(); i++) {
-                    System.out.println(pathX.get(i) + " " + pathY.get(i));
+                if (currentSetting.equals("Generate Random Maze")) {
+                	generateMap();
+                }
+                else {
+                	generateRandomMap();
                 }
                 buildMazeGUI();
             }
@@ -235,49 +224,141 @@ public class Main {
     }
 
     public static void buildMazeGUI() {
+        JFrame mazeFrame = new JFrame();
         mazeFrame.setVisible(true);
         mazeFrame.getContentPane().removeAll();
         mazeFrame.setTitle("Maze");
-        mazeFrame.setSize(1920, 1080);
-        mazeFrame.setLayout(new GridLayout(rows, cols));
+        mazeFrame.setSize(1800, 1080);
+        mazeFrame.setLayout(new BorderLayout());
+        mazeFrame.addWindowListener(new WindowAdapter(){
+            public void windowClosing(WindowEvent e){
+                buildStartMenuGUI();
+            }
+        });
 
-        ArrayList<String> pathXY = new ArrayList<>();
-        for (int i = 1; i < pathX.size(); i++) {
-            pathXY.add(pathX.get(i) + " " + pathY.get(i));
-        }
+        JPanel mazePanel = new JPanel();
+        mazePanel.setLayout(new GridLayout(rows,cols));
+        mazeFrame.add(mazePanel, BorderLayout.CENTER);
+
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 JPanel positionPanel = new JPanel(new GridBagLayout());
                 positionPanel.setBorder(BorderFactory.createLineBorder(Color.black));
-                if (pathXY.contains(j + " " + i)) {
-                    positionPanel.setBackground(colourLegend.get('+'));
-                } else {
-                    positionPanel.setBackground(colourLegend.get(map[i][j]));
-                }
 
                 JLabel positionLabel = new JLabel();
-                if (pathXY.contains(j + " " + i)) {
-                    positionLabel.setText("+");
-                } else {
-                    positionLabel.setText("" + map[i][j]);
-                }
                 positionLabel.setFont(new Font("Roboto", Font.BOLD, 32));
                 positionLabel.setHorizontalAlignment(JLabel.CENTER);
                 positionLabel.setVerticalAlignment(JLabel.CENTER);
+
+                for (int k = 0; k < pathX.size(); k++) {
+                    if (pathX.get(k) == j && pathY.get(k) == i) {
+                        positionLabel.setText("+");
+                        positionPanel.setBackground(colourLegend.get('+'));
+                    }
+                }
+                if (positionLabel.getText().isEmpty()) {
+                    positionLabel.setText("" + map[i][j]);
+                    positionPanel.setBackground(colourLegend.get(map[i][j]));
+                }
+
                 positionPanel.add(positionLabel);
-                mazeFrame.add(positionPanel);
+                mazePanel.add(positionPanel);
             }
         }
+
+        JPanel buttonsPanel = new JPanel();
+        buttonsPanel.setLayout(new BorderLayout());
+        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+        mazeFrame.add(buttonsPanel, BorderLayout.SOUTH);
+
+        JButton mainMenuButton = new JButton();
+        mainMenuButton.setText("Main Menu");
+        mainMenuButton.setFont(new Font("Roboto", Font.PLAIN, 32));
+        mainMenuButton.setMargin(new Insets(10,10,10,10));
+        mainMenuButton.setHorizontalAlignment(JLabel.CENTER);
+        mainMenuButton.setVerticalAlignment(JLabel.CENTER);
+
+        mainMenuButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mazeFrame.setVisible(false);
+                buildStartMenuGUI();
+            }
+        } );
+        buttonsPanel.add(mainMenuButton, BorderLayout.LINE_START);
+
+        JLabel progressLabel = new JLabel();
+        progressLabel.setText("");
+        progressLabel.setFont(new Font("Roboto", Font.BOLD, 28));
+        progressLabel.setHorizontalAlignment(JLabel.CENTER);
+        progressLabel.setVerticalAlignment(JLabel.CENTER);
+        buttonsPanel.add(progressLabel, BorderLayout.CENTER);
+
+        JButton findPathButton = new JButton();
+        findPathButton.setText("Find Path");
+        findPathButton.setFont(new Font("Roboto", Font.PLAIN, 32));
+        findPathButton.setMargin(new Insets(10,10,10,10));
+        findPathButton.setHorizontalAlignment(JLabel.CENTER);
+        findPathButton.setVerticalAlignment(JLabel.CENTER);
+
+        findPathButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                dfs(startX,startY);
+                for (int i = 0; i < pathX.size(); i++) {
+                    System.out.println(pathX.get(i) + " " + pathY.get(i));
+                }
+                mazeFrame.setVisible(false);
+                buildMazeGUI();
+            }
+        } );
+        buttonsPanel.add(findPathButton, BorderLayout.LINE_END);
     }
 
+    public static void readFileGUI() {
+        JFrame readFileFrame = new JFrame();
+        readFileFrame.setTitle("Maze Settings");
+        readFileFrame.setSize(800, 600);
+
+        JButton fileButton = new JButton("Select File:");
+        fileButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                int response = fileChooser.showOpenDialog(null);
+
+                if (response == JFileChooser.APPROVE_OPTION) {
+                    try {
+                        readMazeFile(fileChooser.getSelectedFile().getAbsolutePath());
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
+                }
+            }
+        } );
+
+        readFileFrame.add(fileButton);
+
+        readFileFrame.setVisible(true);
+    }
+
+    /**
+     * This method generates a random map based on the given size by the user. This map is not directly displayed to the
+     * user in the GUI, but works as a strong foundation for the later DFS and maze solver.
+     *
+     * We utilize a web process, beginning at the start and slowly spreading outwards. We do this by randomly picking a
+     * point that can still be branched out of and
+     */
     public static void generateMap() {
+        // Reset and initialize all map variables
         visited = new boolean[rows][cols];
         map = new char[rows][cols];
+        canExit = false;
+        pathX.clear();
+        pathY.clear();
 
-        ArrayList<Integer> openX = new ArrayList<>();
-        ArrayList<Integer> openY = new ArrayList<>();
+        ArrayList<Integer> openX = new ArrayList<>(); // X Coordinates of all open paths
+        ArrayList<Integer> openY = new ArrayList<>(); // Y Coordinates of all open paths
 
+        // Set all map positions to borders
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 map[i][j] = 'B';
@@ -288,6 +369,7 @@ public class Main {
         openY.add((int) (Math.random() * (rows / 3)) + (rows / 3)); // Generate Start Y Position
         map[openY.get(0)][openX.get(0)] = 'S';
 
+        // Store Start Position for Later DFS
         startX = openX.get(0);
         startY = openY.get(0);
 
@@ -371,7 +453,8 @@ public class Main {
         }
     }
 
-    /** This method checks whether the new randomly chosen point is viable to be set as an open path. There are three
+    /**
+     * This method checks whether the new randomly chosen point is viable to be set as an open path. There are three
      * different cases we must check for. First, the new point cannot be on the edge of the map if there is already an
      * exit point (Can't have two exit points). Second, the new point cannot be on a point that is already set to an
      * open path. Third, the new point cannot have any adjacent squares that are open paths. This prevents open areas
@@ -416,6 +499,83 @@ public class Main {
         }
 
         return countAdjacent <= 1;
+    }
+
+    public static void generateRandomMap() {
+        visited = new boolean[rows][cols];
+        map = new char[rows][cols];
+        canExit = false;
+        pathX.clear();
+        pathY.clear();
+
+
+    	for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                map[i][j] = 'B';
+            }
+        }
+
+    	map[(int) ((Math.random() * (rows / 3)) + (rows / 3))][(int) ((Math.random() * (cols / 3)) + (cols / 3))] = 'S';
+    	for (int i = 1; i < rows - 1; i++) {
+    		for (int j = 1; j < cols - 1; j++) {
+    			int choice = (int) (Math.random() * 2);
+    			// If choice == 0, do nothing keep as B
+    			// Base case: if the square we are on is the start, don't change it
+    			if (map[i][j] == 'S') {
+    				continue;
+    			}
+    			if (choice == 1) {
+    				map[i][j] = 'O';
+    			}
+    		}
+    	}
+
+    	// Which side the exit is on
+    	int exitSide = (int) (Math.random() * 4);
+    	switch (exitSide) {
+    		case 0: // Top
+    			map[0][(int) (Math.random() * (cols - 2)) + 1] = 'X';
+    			break;
+    		case 1: // Right
+    			map[(int) (Math.random() * (rows - 2)) + 1][cols - 1] = 'X';
+    			break;
+    		case 2: // Bottom
+    			map[rows - 1][(int) (Math.random() * (cols - 2)) + 1] = 'X';
+    			break;
+    		case 3: // Left
+    			map[(int) (Math.random() * (rows - 2)) + 1][0] = 'X';
+    			break;
+    	}
+    }
+
+
+    public static void readMazeFile(String path) throws Exception {
+    	File file = new File(path);
+    	Scanner scan = new Scanner(file);
+
+    	rows = scan.nextInt();
+    	cols = scan.nextInt();
+
+    	map = new char[rows][cols];
+    	visited = new boolean[rows][cols];
+
+    	for (int i = 0; i < 4; i++) {
+    		mapLegend[i] = scan.next().charAt(0);
+    	}
+    	for (int i = 0; i < rows; i++) {
+    		String row = scan.next();
+    		for (int j = 0; j < cols; j++) {
+    			map[i][j] = row.charAt(j);
+                if (row.charAt(j) == mapLegend[2]) {
+                    startX = j;
+                    startY = i;
+                }
+    		}
+    	}
+
+    	scan.close();
+
+    	buildMazeGUI();
     }
 
     public static void dfs(int posX, int posY) {
