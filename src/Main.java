@@ -124,7 +124,7 @@ public class Main {
         readFileButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 // Opens file reader GUI
-                readFileGUI();
+                readFileGUI("");
             }
         } );
 
@@ -285,6 +285,7 @@ public class Main {
         // Panel holding the maze display
         JPanel mazePanel = new JPanel();
         mazePanel.setLayout(new GridLayout(rows,cols));
+        mazePanel.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
         mazeFrame.add(mazePanel, BorderLayout.CENTER);
 
         // Iterate through all positions
@@ -383,15 +384,52 @@ public class Main {
     /**
      * Builds GUI which allows user to select their file. Allows for dynamic file input and better user experience
      */
-    public static void readFileGUI() {
+    public static void readFileGUI(String fileCond) {
 
         // Frame holding all components
         JFrame readFileFrame = new JFrame();
         readFileFrame.setTitle("Maze Settings");
         readFileFrame.setSize(800, 600);
+        readFileFrame.setLayout(new GridBagLayout());
+
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        JTextArea mainLabel = new JTextArea("Please write your text file this specific format\n(Not including brackets):");
+        mainLabel.setFont(new Font("Roboto", Font.PLAIN, 32));
+        mainLabel.setAlignmentX(JTextArea.CENTER_ALIGNMENT);
+        mainLabel.setAlignmentY(JTextArea.CENTER_ALIGNMENT);
+        mainLabel.setOpaque(false);
+        mainLabel.setForeground(Color.black);
+        mainLabel.setEditable(false);
+        mainLabel.setHighlighter(null);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0,0,10,0);
+        readFileFrame.add(mainLabel, gbc);
+
+        JTextArea instructionsPanel = new JTextArea();
+        instructionsPanel.setText("5 (Number of Rows)\n6 (Number of Columns)\nB (Border)\nO (Open Path)\nS (Starting Point)\nX (Exit)\nBBBBXB\nBSBOOB\nBOBOBB\nBOOOOB\nBBBBBB\n(Map)");
+        instructionsPanel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 18));
+        instructionsPanel.setOpaque(false);
+        instructionsPanel.setForeground(Color.black);
+        instructionsPanel.setEditable(false);
+        instructionsPanel.setHighlighter(null);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0,0,10,0);
+        readFileFrame.add(instructionsPanel, gbc);
 
         // Select file button
-        JButton fileButton = new JButton("Select File:");
+        JButton fileButton = new JButton();
+        fileButton.setText("Select File");
+        fileButton.setFont(new Font("Roboto", Font.BOLD, 32));
+        fileButton.setMargin(new Insets(10,10,10,10));
+        fileButton.setHorizontalAlignment(JLabel.CENTER);
+        fileButton.setVerticalAlignment(JLabel.CENTER);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0,0,10,0);
+
         fileButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 // Opens file chooser
@@ -401,6 +439,7 @@ public class Main {
                 if (response == JFileChooser.APPROVE_OPTION) {
                     try {
                         // Get file path and begin reading
+                        readFileFrame.dispose();
                         readMazeFile(fileChooser.getSelectedFile().getAbsolutePath());
                     } catch (Exception e1) {
                         e1.printStackTrace();
@@ -409,15 +448,28 @@ public class Main {
             }
         } );
 
-        readFileFrame.add(fileButton);
+        readFileFrame.add(fileButton, gbc);
+
+
+        JTextArea errorLabel = new JTextArea(fileCond);
+        errorLabel.setFont(new Font("Roboto", Font.PLAIN, 32));
+        errorLabel.setAlignmentX(JTextArea.CENTER_ALIGNMENT);
+        errorLabel.setAlignmentY(JTextArea.CENTER_ALIGNMENT);
+        errorLabel.setOpaque(false);
+        errorLabel.setForeground(Color.black);
+        errorLabel.setEditable(false);
+        errorLabel.setHighlighter(null);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.insets = new Insets(0,0,10,0);
+        readFileFrame.add(errorLabel, gbc);
 
         readFileFrame.setVisible(true);
     }
 
     /**
      * Reads the text file given by user and converts it into a proper maze format
-     * @param path
-     * @throws Exception
+     * @param path Path of file
      */
     public static void readMazeFile(String path) throws Exception {
         // Get file objects from file path
@@ -425,8 +477,35 @@ public class Main {
         Scanner scan = new Scanner(file);
 
         // Read for number of rows and columns
-        rows = scan.nextInt();
-        cols = scan.nextInt();
+        try {
+        	rows = scan.nextInt();
+        	if (rows > 50 || rows < 3) {
+        		readFileGUI("Invalid input, row length has to be\nin between the range of 3 to 50.");
+        		scan.close();
+        		return;
+        	}
+        }
+        catch(Exception e) {
+        	readFileGUI("Invalid input, please input\nan integer for row length");
+        	scan.close();
+        	return;
+        }
+
+        try {
+        	cols = scan.nextInt();
+        	if (cols > 50 || cols < 3) {
+        		readFileGUI("Invalid input, column length has to\nbe in between the range of 3 to 50.");
+        		scan.close();
+        		return;
+        	}
+        }
+        catch(Exception e) {
+        	readFileGUI("Invalid input, please input an\ninteger for column length");
+        	scan.close();
+        	return;
+        }
+
+        scan.nextLine();
 
         // Initialize and reset needed variables
         map = new char[rows][cols];
@@ -438,20 +517,79 @@ public class Main {
 
         // Read map legend labels; Default: {B, O, X, S, +}
         for (int i = 0; i < 4; i++) {
-            mapLegend[i] = scan.next().charAt(0);
+        	String label = scan.nextLine();
+        	if (label.length() == 1) {
+        		mapLegend[i] = label.charAt(0);
+        	}
+        	else {
+        		readFileGUI("Invalid input, please ensure that your\nmap labels are only one character.");
+        		scan.close();
+        		return;
+        	}
         }
 
         // Iterates through all positions
+        boolean startPresent = false, exitPresent = false;
         for (int i = 0; i < rows; i++) {
-            String row = scan.next();
+            String row = scan.nextLine();
+            if (row.length() != cols) {
+            	readFileGUI("Invalid input, ensure that you have exactly\nthe number of characters you need per column");
+            	scan.close();
+            	return;
+            }
             for (int j = 0; j < cols; j++) {
                 // Set map position to the character found at that position
-                map[i][j] = row.charAt(j);
-                // Set startX and startY if position is the start
-                if (row.charAt(j) == mapLegend[2]) {
-                    startX = j;
-                    startY = i;
+            	char mapValue = row.charAt(j);
+            	boolean valuePresent = false;
+            	for (int k = 0; k < 4; k++) {
+            		if (mapValue == mapLegend[k]) {
+            			valuePresent = true;
+            		}
+            	}
+            	if (!valuePresent) {
+            		readFileGUI("Invalid input, please input a\ncharacter from your map legend.");
+            		scan.close();
+            		return;
+            	}
+
+                if (i == 0 || i == rows - 1 || j == 0 || j == cols - 1) {
+                	if (mapValue != mapLegend[0] && mapValue != mapLegend[3]) {
+                		readFileGUI("Invalid input, you can only have borders\nor an exit on the side of your map.");
+                		scan.close();
+                		return;
+                	}
                 }
+                // Set startX and startY if position is the start
+                if (mapValue == mapLegend[2]) {
+                	if (!startPresent) {
+                		startPresent = true;
+                		startX = j;
+                		startY = i;
+                	}
+                	else {
+                		readFileGUI("Invalid input, you can only have one start.");
+                		scan.close();
+                		return;
+                	}
+                }
+
+                if (mapValue == mapLegend[3]) {
+                	if (i > 0 && i < rows - 1 && j > 0 && j < cols - 1) {
+                		readFileGUI("Invalid input, you can only have\nan exit on the borders, not in the middle.");
+                		scan.close();
+                		return;
+                	}
+                	if (!exitPresent) {
+                		exitPresent = true;
+                	}
+                	else {
+                		readFileGUI("Invalid input, you can only have one exit.");
+                		scan.close();
+                		return;
+                	}
+                }
+
+                map[i][j] = mapValue;
             }
         }
 
@@ -469,6 +607,8 @@ public class Main {
      */
     public static void generateMap() {
         // Reset and initialize all map variables
+        mapLegend = new char[]{'B', 'O', 'S', 'X'};
+
         visited = new boolean[rows][cols];
         map = new char[rows][cols];
         canExit = false;
@@ -485,8 +625,8 @@ public class Main {
             }
         }
 
-        openX.add((int) (Math.random() * (cols / 3)) + (cols / 3)); // Generate Start X Position
-        openY.add((int) (Math.random() * (rows / 3)) + (rows / 3)); // Generate Start Y Position
+        openX.add((int) (Math.random() * (cols / 5)) + (cols / 3)); // Generate Start X Position
+        openY.add((int) (Math.random() * (rows / 5)) + (rows / 3)); // Generate Start Y Position
         map[openY.get(0)][openX.get(0)] = mapLegend[2];
 
         // Store Start Position for Later DFS
