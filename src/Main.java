@@ -8,22 +8,22 @@ import java.io.*;
 import java.util.*;
 
 public class Main {
-    static boolean[][] visited;
+    // Global variable declarations
 
-    static char[][] map;
+    static boolean[][] visited; // This is used for path finding (DFS), where true in the 2D array represents that that square has been visited.
 
+    static char[][] map; // This is used to store our maze
+
+    // Legend for our map, used for GUI display
     static char[] mapLegend = {'B', 'O', 'S', 'X'};
     static HashMap<Character, Color> colourLegend = new HashMap<>();
 
-
-    /*
-     * Path finding algorithm variables
-     */
-
+    //Variables used for our path finding algorithm, pathX and pathY to store paths, canExit shows if we can exit our maze
     static boolean canExit = false;
     static ArrayList<Integer> pathX = new ArrayList<>();
     static ArrayList<Integer> pathY = new ArrayList<>();
 
+    // These variables are used throughout the program, where startXY marks our start, while row and cols represent our map size
     static int startX, startY;
     static int rows, cols;
 
@@ -235,10 +235,10 @@ public class Main {
                 settingsFrame.setVisible(false);
                 welcomeFrame.setVisible(false);
                 if (currentSetting.equals("Generate Random Maze")) {
-                	generateMap(); // Generates a random maze
+                    generateMap(); // Generates a random maze
                 }
                 else {
-                	generateRandomMap(); // Generates a purely random maze
+                    generateRandomMap(); // Generates a purely random maze
                 }
                 buildMazeGUI("Maze Loaded"); // Builds maze GUI
             }
@@ -469,6 +469,8 @@ public class Main {
 
     /**
      * Reads the text file given by user and converts it into a proper maze format
+     * If there are errors within the text, it returns back to the file GUI method, and displays what the error was
+     *
      * @param path Path of file
      */
     public static void readMazeFile(String path) throws Exception {
@@ -478,14 +480,14 @@ public class Main {
 
         // Read for number of rows and columns
         try {
-        	rows = scan.nextInt();
-        	if (rows > 50 || rows < 3) {
-        		readFileGUI("Invalid input, row length has to be\nin between the range of 3 to 50.");
-        		scan.close();
-        		return;
-        	}
+          rows = scan.nextInt();
+          if (rows > 50 || rows < 3) { // If there are errors within, the file GUI method gets called again, returning back and showing what the error is
+            readFileGUI("Invalid input, row length has to be\nin between the range of 3 to 50.");
+            scan.close();
+            return;
+          }
         }
-        catch(Exception e) {
+        catch(Exception e) { // If they input something that isn't an integer
         	readFileGUI("Invalid input, please input\nan integer for row length");
         	scan.close();
         	return;
@@ -518,7 +520,7 @@ public class Main {
         // Read map legend labels; Default: {B, O, X, S, +}
         for (int i = 0; i < 4; i++) {
         	String label = scan.nextLine();
-        	if (label.length() == 1) {
+        	if (label.length() == 1) { // If there are more than 1 characters, return
         		mapLegend[i] = label.charAt(0);
         	}
         	else {
@@ -532,7 +534,7 @@ public class Main {
         boolean startPresent = false, exitPresent = false;
         for (int i = 0; i < rows; i++) {
             String row = scan.nextLine();
-            if (row.length() != cols) {
+            if (row.length() != cols) { // If there is not enough squares for a col
             	readFileGUI("Invalid input, ensure that you have exactly\nthe number of characters you need per column");
             	scan.close();
             	return;
@@ -546,13 +548,13 @@ public class Main {
             			valuePresent = true;
             		}
             	}
-            	if (!valuePresent) {
+            	if (!valuePresent) { // If the value is not present in the legend
             		readFileGUI("Invalid input, please input a\ncharacter from your map legend.");
             		scan.close();
             		return;
             	}
 
-                if (i == 0 || i == rows - 1 || j == 0 || j == cols - 1) {
+                if (i == 0 || i == rows - 1 || j == 0 || j == cols - 1) { // Only have borders or exit on the side
                 	if (mapValue != mapLegend[0] && mapValue != mapLegend[3]) {
                 		readFileGUI("Invalid input, you can only have borders\nor an exit on the side of your map.");
                 		scan.close();
@@ -566,7 +568,7 @@ public class Main {
                 		startX = j;
                 		startY = i;
                 	}
-                	else {
+                	else { // Only one start
                 		readFileGUI("Invalid input, you can only have one start.");
                 		scan.close();
                 		return;
@@ -574,12 +576,12 @@ public class Main {
                 }
 
                 if (mapValue == mapLegend[3]) {
-                	if (i > 0 && i < rows - 1 && j > 0 && j < cols - 1) {
+                	if (i > 0 && i < rows - 1 && j > 0 && j < cols - 1) { // Only exit on the border
                 		readFileGUI("Invalid input, you can only have\nan exit on the borders, not in the middle.");
                 		scan.close();
                 		return;
                 	}
-                	if (!exitPresent) {
+                	if (!exitPresent) { // Do not have more than one exit
                 		exitPresent = true;
                 	}
                 	else {
@@ -589,6 +591,7 @@ public class Main {
                 	}
                 }
 
+                // Change value in map
                 map[i][j] = mapValue;
             }
         }
